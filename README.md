@@ -6,12 +6,6 @@
 
 ## Quick Start
 
-This repository includes two simulation options:
-
-### Option 1: Hector Quadrotor + Gazebo (Recommended)
-
-Full 3D visualization with Gazebo physics simulation.
-
 ```bash
 # Setup environment
 source /opt/ros/noetic/setup.bash
@@ -22,15 +16,7 @@ source ~/Fast-Planner/devel/setup.bash --extend
 roslaunch plan_manage hector_fast_planner.launch
 ```
 
-### Option 2: SO(3) Lightweight Simulation (is broken)
-
-Fast startup without Gazebo, using random obstacle maps.
-
-```bash
-./launch_so3.sh
-```
-
-**After launching either option:**
+**After launching:**
 - Use "2D Nav Goal" in RViz to set target positions
 - Watch autonomous obstacle avoidance in action!
 
@@ -44,7 +30,6 @@ Fast startup without Gazebo, using random obstacle maps.
 - B-spline trajectory optimization
 - ESDF-based environment mapping
 - Hector Quadrotor + Gazebo integration
-- SO(3) geometric controller (lightweight sim)
 
 ---
 
@@ -52,7 +37,6 @@ Fast startup without Gazebo, using random obstacle maps.
 
 | Document | Description |
 |----------|-------------|
-| [SO3_SETUP.md](SO3_SETUP.md) | Simulation systems guide |
 | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Code organization |
 | [PROJECT_STRUCTURE_zh_TW.md](PROJECT_STRUCTURE_zh_TW.md) | 專案結構（繁體中文） |
 | [INSTALL_zh_TW.md](INSTALL_zh_TW.md) | 安裝指南（繁體中文） |
