@@ -12,10 +12,9 @@ Fast-Planner/
 ├── PROJECT_STRUCTURE_zh_TW.md   # 專案結構（繁體中文）
 ├── PROJECT_REPORT.md            # 專案報告
 ├── INSTALL_zh_TW.md             # 安裝指南（繁體中文）
-├── SO3_SETUP.md                 # 模擬系統指南
 ├── .gitignore                   # Git 忽略規則
 ├── fast_planner/                # Fast-Planner 核心模組
-├── uav_simulator/               # 無人機模擬元件（SO(3) 系統）
+├── uav_simulator/Utils/         # 訊息類型與工具套件
 ├── hector_ws/                   # Hector Quadrotor 工作空間
 └── src/                         # ROS 工作空間來源連結
 ```
@@ -35,7 +34,6 @@ fast_planner/
 │   ├── launch/           # 啟動檔案
 │   │   ├── hector_fast_planner.launch    # Hector+Gazebo 主啟動檔
 │   │   ├── kino_algorithm_hector.xml     # Hector 規劃參數
-│   │   ├── kino_replan.launch            # SO(3) 輕量模擬
 │   │   └── rviz.launch                   # 視覺化
 │   ├── src/              # 原始碼
 │   │   ├── hector_cmd_bridge.cpp         # Fast-Planner → Hector 速度橋接
@@ -62,22 +60,18 @@ hector_ws/
         └── hector_sensors_description/    # Kinect 相機 URDF
 ```
 
-### uav_simulator/
-輕量級四旋翼模擬（SO(3) 系統，無需 Gazebo）。
+### uav_simulator/Utils/
+訊息類型定義與工具套件。
 
 ```
-uav_simulator/
-├── so3_quadrotor_simulator/   # 基於物理的四旋翼動力學
-├── so3_control/               # SO(3) 幾何控制器
-├── local_sensing_node/        # 深度相機/光達模擬
-├── map_generator/             # 隨機 3D 障礙物地圖生成
-└── Utils/
-    └── waypoint_generator/    # 將 RViz 目標轉換為航點
+uav_simulator/Utils/
+├── quadrotor_msgs/        # 四旋翼訊息類型（PositionCommand 等）
+├── waypoint_generator/    # 將 RViz 目標轉換為航點
+├── odom_visualization/    # 里程計視覺化
+└── uav_utils/             # 通用工具函式
 ```
 
 ## 啟動系統
-
-### 選項 1：Hector Quadrotor + Gazebo（推薦）
 
 **啟動指令：**
 ```bash
@@ -92,20 +86,6 @@ roslaunch plan_manage hector_fast_planner.launch
 - 真實 Kinect 深度相機
 - Hector Quadrotor 物理模擬
 - 障礙物世界環境
-
-### 選項 2：SO(3) 輕量模擬
-
-**啟動指令：**
-```bash
-source ~/Fast-Planner/devel/setup.bash
-roslaunch plan_manage kino_replan.launch
-```
-
-**特色：**
-- 快速啟動（無需 Gazebo）
-- 隨機障礙物生成
-- SO(3) 幾何控制器
-- 點雲視覺化
 
 ## 設定檔案
 

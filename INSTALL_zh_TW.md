@@ -180,11 +180,6 @@ catkin_make
 
 ```bash
 cd ~/Fast-Planner
-
-# 初始化工作空間（如果尚未初始化）
-./setup_workspace.sh
-
-# 或手動編譯
 source /opt/ros/${ROS_DISTRO}/setup.bash
 catkin_make
 ```
@@ -207,23 +202,7 @@ catkin_make
 
 ## 驗證安裝
 
-### 測試 1：SO(3) 輕量模擬
-
 ```bash
-cd ~/Fast-Planner
-source devel/setup.bash
-roslaunch plan_manage kino_replan.launch
-```
-
-預期結果：
-- RViz 開啟並顯示隨機障礙物地圖
-- 無人機模型出現在原點
-- 可使用 "2D Nav Goal" 設置目標
-
-### 測試 2：Hector + Gazebo 模擬
-
-```bash
-# 終端機 1
 source /opt/ros/noetic/setup.bash
 source ~/Fast-Planner/hector_ws/devel/setup.bash --extend
 source ~/Fast-Planner/devel/setup.bash --extend
@@ -233,41 +212,8 @@ roslaunch plan_manage hector_fast_planner.launch
 預期結果：
 - Gazebo 開啟並顯示障礙物世界
 - Hector 四旋翼出現在場景中
-- RViz 顯示深度相機視角
+- RViz 顯示深度相機視角（綠色扇形點雲）
 - 可使用 "2D Nav Goal" 測試避障
-
----
-
-## 選配：GPU 深度渲染
-
-如需更真實的深度相機模擬，可啟用 CUDA 加速。
-
-### 安裝 CUDA Toolkit
-
-前往 [NVIDIA CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) 下載並安裝。
-
-### 修改 CMakeLists.txt
-
-編輯 `uav_simulator/local_sensing/CMakeLists.txt`：
-
-```cmake
-set(ENABLE_CUDA true)
-
-# 根據顯示卡設置 compute capability
-# 查詢：https://developer.nvidia.com/cuda-gpus
-set(CUDA_NVCC_FLAGS
-  -gencode arch=compute_75,code=sm_75;  # RTX 20 系列
-  # -gencode arch=compute_86,code=sm_86;  # RTX 30 系列
-  # -gencode arch=compute_89,code=sm_89;  # RTX 40 系列
-)
-```
-
-重新編譯：
-```bash
-cd ~/Fast-Planner
-catkin_make clean
-catkin_make
-```
 
 ---
 
@@ -356,7 +302,7 @@ roslaunch plan_manage rviz.launch
 ├── devel/                  # 編譯輸出（setup.bash 在此）
 ├── build/                  # 編譯中間檔案
 ├── fast_planner/           # Fast-Planner 核心模組
-├── uav_simulator/          # SO(3) 模擬器
+├── uav_simulator/Utils/    # 訊息類型與工具套件
 ├── hector_ws/              # Hector Quadrotor 工作空間
 │   ├── src/
 │   ├── devel/
@@ -371,7 +317,6 @@ roslaunch plan_manage rviz.launch
 安裝完成後，請參閱：
 
 - [README.md](README.md) - 快速啟動指南
-- [SO3_SETUP.md](SO3_SETUP.md) - 模擬系統詳細說明
 - [PROJECT_STRUCTURE_zh_TW.md](PROJECT_STRUCTURE_zh_TW.md) - 專案結構說明
 - [PROJECT_REPORT.md](PROJECT_REPORT.md) - 專案報告
 

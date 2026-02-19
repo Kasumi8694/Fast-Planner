@@ -12,10 +12,9 @@ Fast-Planner/
 ├── PROJECT_STRUCTURE_zh_TW.md  # Project structure (Traditional Chinese)
 ├── PROJECT_REPORT.md      # Project report (Traditional Chinese)
 ├── INSTALL_zh_TW.md       # Installation guide (Traditional Chinese)
-├── SO3_SETUP.md           # Simulation systems guide
 ├── .gitignore             # Git ignore rules
 ├── fast_planner/          # Core Fast-Planner modules
-├── uav_simulator/         # UAV simulation components (SO(3) system)
+├── uav_simulator/Utils/   # Message types and utility packages
 ├── hector_ws/             # Hector Quadrotor workspace
 └── src/                   # ROS workspace source link
 ```
@@ -35,7 +34,6 @@ fast_planner/
 │   ├── launch/           # Launch files
 │   │   ├── hector_fast_planner.launch    # Main Hector+Gazebo launch
 │   │   ├── kino_algorithm_hector.xml     # Planning parameters for Hector
-│   │   ├── kino_replan.launch            # SO(3) lightweight simulation
 │   │   └── rviz.launch                   # Visualization
 │   ├── src/              # Source files
 │   │   ├── hector_cmd_bridge.cpp         # Fast-Planner → Hector velocity bridge
@@ -62,22 +60,18 @@ hector_ws/
         └── hector_sensors_description/    # Kinect camera URDF
 ```
 
-### uav_simulator/
-Lightweight quadrotor simulation (SO(3) system, no Gazebo).
+### uav_simulator/Utils/
+Message type definitions and utility packages.
 
 ```
-uav_simulator/
-├── so3_quadrotor_simulator/   # Physics-based quadrotor dynamics
-├── so3_control/               # SO(3) geometric controller
-├── local_sensing_node/        # Depth camera/LiDAR simulation
-├── map_generator/             # Random 3D obstacle map generation
-└── Utils/
-    └── waypoint_generator/    # Converts RViz goals to waypoints
+uav_simulator/Utils/
+├── quadrotor_msgs/        # Quadrotor message types (PositionCommand, etc.)
+├── waypoint_generator/    # Converts RViz goals to waypoints
+├── odom_visualization/    # Odometry visualization
+└── uav_utils/             # Common utility functions
 ```
 
-## Launch Systems
-
-### Option 1: Hector Quadrotor + Gazebo (Recommended)
+## Launch System
 
 **Launch Command:**
 ```bash
@@ -92,20 +86,6 @@ roslaunch plan_manage hector_fast_planner.launch
 - Realistic Kinect depth camera
 - Hector Quadrotor physics
 - Obstacle world environment
-
-### Option 2: SO(3) Lightweight Simulation
-
-**Launch Command:**
-```bash
-source ~/Fast-Planner/devel/setup.bash
-roslaunch plan_manage kino_replan.launch
-```
-
-**Features:**
-- Faster startup (no Gazebo)
-- Random obstacle generation
-- SO(3) geometric controller
-- Point cloud visualization
 
 ## Configuration Files
 
