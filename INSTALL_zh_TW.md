@@ -116,6 +116,7 @@ mkdir build && cd build
 cmake ..
 make -j$(nproc)
 sudo make install
+sudo ldconfig  # 更新動態連結庫
 ```
 
 驗證安裝：
@@ -151,22 +152,26 @@ sudo apt-get install ros-${ROS_DISTRO}-cv-bridge \
 
 ---
 
-### 步驟 3：安裝 Hector Quadrotor（Gazebo 模擬用）
+### 步驟 3：Clone 專案
 
 ```bash
-# 建立 Hector 工作空間
-cd ~/Fast-Planner
-mkdir -p hector_ws/src
-cd hector_ws/src
+cd ~
+git clone https://github.com/YOUR_USERNAME/Fast-Planner.git
+cd Fast-Planner
+```
 
-# 下載 Hector Quadrotor 套件
-git clone https://github.com/tu-darmstadt-ros-pkg/hector_quadrotor.git
-git clone https://github.com/tu-darmstadt-ros-pkg/hector_localization.git
-git clone https://github.com/tu-darmstadt-ros-pkg/hector_gazebo.git
-git clone https://github.com/tu-darmstadt-ros-pkg/hector_models.git
+> 請將 `YOUR_USERNAME` 替換為實際的 GitHub 用戶名或完整的 repository URL。
 
-# 安裝相依
+---
+
+### 步驟 4：編譯 Hector Quadrotor
+
+Hector Quadrotor 套件已包含在專案中，只需安裝相依並編譯：
+
+```bash
 cd ~/Fast-Planner/hector_ws
+
+# 安裝相依套件
 rosdep install --from-paths src --ignore-src -r -y
 
 # 編譯
@@ -176,7 +181,7 @@ catkin_make
 
 ---
 
-### 步驟 4：編譯 Fast-Planner
+### 步驟 5：編譯 Fast-Planner
 
 ```bash
 cd ~/Fast-Planner
