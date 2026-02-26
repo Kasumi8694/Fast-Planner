@@ -164,14 +164,21 @@ cd Fast-Planner
 
 ---
 
-### 步驟 4：編譯 Hector Quadrotor
+### 步驟 4：建立並編譯 Hector Quadrotor
 
-Hector Quadrotor 套件已包含在專案中，只需安裝相依並編譯：
+hector_ws 不包含在 git 中，需要手動建立並 clone：
 
 ```bash
-cd ~/Fast-Planner/hector_ws
+mkdir -p ~/Fast-Planner/hector_ws/src
+cd ~/Fast-Planner/hector_ws/src
 
-# 安裝相依套件
+git clone https://github.com/tu-darmstadt-ros-pkg/hector_quadrotor.git
+git clone https://github.com/tu-darmstadt-ros-pkg/hector_localization.git
+git clone https://github.com/tu-darmstadt-ros-pkg/hector_gazebo.git
+git clone https://github.com/tu-darmstadt-ros-pkg/hector_models.git
+
+# 安裝相依套件（部分警告可忽略）
+cd ~/Fast-Planner/hector_ws
 rosdep install --from-paths src --ignore-src -r -y
 
 # 編譯
@@ -183,9 +190,12 @@ catkin_make
 
 ### 步驟 5：編譯 Fast-Planner
 
+必須先 source hector_ws，否則找不到 `hector_uav_msgs`：
+
 ```bash
 cd ~/Fast-Planner
 source /opt/ros/${ROS_DISTRO}/setup.bash
+source ~/Fast-Planner/hector_ws/devel/setup.bash --extend
 catkin_make
 ```
 
