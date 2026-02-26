@@ -181,6 +181,10 @@ git clone https://github.com/tu-darmstadt-ros-pkg/hector_models.git
 cd ~/Fast-Planner/hector_ws
 rosdep install --from-paths src --ignore-src -r -y
 
+# 手動安裝 rosdep 無法自動解析的套件
+sudo apt-get install -y ros-${ROS_DISTRO}-geographic-msgs \
+                        ros-${ROS_DISTRO}-joy
+
 # 編譯
 source /opt/ros/${ROS_DISTRO}/setup.bash
 catkin_make
