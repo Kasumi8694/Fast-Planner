@@ -54,23 +54,11 @@
 
 ## 三、自行開發的內容
 
-### 3.1 新增套件：fast_planner_bridge
-
-**路徑：** `fast_planner/fast_planner_bridge/`
-
-**功能：** 橋接 Fast-Planner 與 Hector Quadrotor 控制系統
-
-| 檔案 | 功能說明 |
-|------|----------|
-| `gazebo_control_bridge.cpp` | 將 Fast-Planner 軌跡命令轉換為 Gazebo 模型狀態控制 |
-| `hector_position_bridge.cpp` | 轉換 Hector 里程計格式為 Fast-Planner 所需格式 |
-| `odom_to_tf_node.cpp` | 發布 TF 轉換供 RViz 視覺化使用 |
-
-### 3.2 新增元件：hector_cmd_bridge
+### 3.1 新增節點：hector_cmd_bridge（核心橋接）
 
 **路徑：** `fast_planner/plan_manage/src/hector_cmd_bridge.cpp`
 
-**功能：** 核心控制橋接節點，將 Fast-Planner 的 `PositionCommand` 轉換為 Hector 的 `/cmd_vel` 速度控制
+**功能：** 橋接 Fast-Planner 與 Hector Quadrotor 控制系統，將 Fast-Planner 的 `PositionCommand` 轉換為 Hector 的 `/cmd_vel` 速度控制。
 
 **技術特點：**
 - 位置誤差 + 速度前饋的混合控制策略
@@ -85,7 +73,25 @@ double vy_world = kp_ * ey + kv_ * cmd->velocity.y;
 double vz_world = kp_ * ez + kv_ * cmd->velocity.z;
 ```
 
-### 3.3 配置檔案與啟動檔
+### 3.2 修改 Fast-Planner 核心：sdf_map.cpp
+
+**路徑：** `fast_planner/plan_env/src/sdf_map.cpp` / `sdf_map.h`
+
+原始 Fast-Planner 不支援 Hector Quadrotor 的資料格式，對核心環境感知模組進行了以下修改：
+
+| 修改項目 | 說明 |
+|----------|------|
+| DEPTH_ODOM_INDEP 模式（pose_type=3） | 新增深度圖與里程計獨立訂閱模式，解決 Hector 時間戳不同步問題 |
+| 相機光學座標系轉換 | 加入 Kinect 光學座標系到無人機機體座標系的旋轉矩陣轉換 |
+| 地圖邊界檢查 | 在 `depthIndepCallback` 中加入邊界保護，防止無人機飛出地圖時崩潰 |
+
+### 3.3 修改 Fast-Planner 核心：traj_server.cpp
+
+**路徑：** `fast_planner/plan_manage/src/traj_server.cpp`
+
+調整軌跡伺服器以配合 Hector 控制介面，輸出適合橋接節點使用的命令格式。
+
+### 3.4 配置檔案與啟動檔
 
 | 檔案 | 說明 |
 |------|------|
@@ -93,24 +99,25 @@ double vz_world = kp_ * ez + kv_ * cmd->velocity.z;
 | `kino_algorithm_hector.xml` | Hector 專用規劃參數配置 |
 | `fast_planner_obstacles.world` | Gazebo 障礙物世界檔 |
 
-### 3.4 技術文件
+### 3.5 技術文件
 
 | 文件 | 語言 | 內容 |
 |------|------|------|
 | `PROJECT_STRUCTURE.md` | 英文 | 專案架構說明 |
 | `PROJECT_STRUCTURE_zh_TW.md` | 繁體中文 | 專案架構說明 |
 | `INSTALL_zh_TW.md` | 繁體中文 | 完整安裝指南 |
-| `SO3_SETUP.md` | 繁體中文 | 模擬系統比較與設定 |
 | `CLAUDE.md` | 英文 | AI 輔助開發指南 |
 
-### 3.5 程式碼統計
+### 3.6 程式碼統計
 
-| 類型 | 估計行數 |
-|------|----------|
-| 新增 C++ 程式碼 | ~500 行 |
-| Launch/XML 配置 | ~300 行 |
-| 技術文件 | ~1200 行 |
-| **總計** | ~2000 行 |
+| 類型 | 內容 | 估計行數 |
+|------|------|----------|
+| 新增 C++ | `hector_cmd_bridge.cpp` | ~190 行 |
+| 修改 C++ | `sdf_map.cpp` / `.h` | ~80 行 |
+| 修改 C++ | `traj_server.cpp` | ~50 行 |
+| Launch/XML 配置 | 啟動檔與參數 | ~200 行 |
+| 技術文件 | Markdown 文件 | ~900 行 |
+| **總計** | | **~1420 行** |
 
 ---
 
@@ -178,8 +185,8 @@ Fast-Planner 輸出 `quadrotor_msgs::PositionCommand`（位置 + 速度 + 加速
 調整優化參數，增加安全距離與距離代價權重：
 
 ```xml
-<param name="sdf_map/obstacles_inflation" value="0.3"/>  <!-- 原 0.099 -->
-<param name="optimization/dist0" value="0.8"/>           <!-- 原 0.4 -->
+<param name="sdf_map/obstacles_inflation" value="0.2"/>  <!-- 原 0.099 -->
+<param name="optimization/dist0" value="0.5"/>           <!-- 原 0.4 -->
 <param name="optimization/lambda2" value="30.0"/>        <!-- 原 5.0 -->
 <param name="manager/max_vel" value="1.0"/>              <!-- 原 3.0 -->
 ```
