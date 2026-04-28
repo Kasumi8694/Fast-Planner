@@ -132,7 +132,7 @@ class KinodynamicAstar {
 
   /* map */
   double resolution_, inv_resolution_, time_resolution_, inv_time_resolution_;
-  Eigen::Vector3d origin_, map_size_3d_;
+  Eigen::Vector3d origin_, map_size_3d_, start_pt_;
   double time_origin_;
 
   /* helper */

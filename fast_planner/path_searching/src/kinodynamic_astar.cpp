@@ -43,6 +43,7 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
 {
   start_vel_ = start_v;
   start_acc_ = start_a;
+  start_pt_ = start_pt;
 
   PathNodePtr cur_node = path_node_pool_[0];
   cur_node->parent = NULL;
@@ -104,6 +105,10 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
     }
     if (reach_horizon)
     {
+      Eigen::Vector3d term_pos = cur_node->state.head(3);
+      ROS_INFO("[DEBUG] A* reach_horizon at (%.2f,%.2f,%.2f), shot_succ=%d, dist_from_start=%.2f",
+               term_pos(0), term_pos(1), term_pos(2), (int)is_shot_succ_,
+               (term_pos - start_pt).norm());
       if (is_shot_succ_)
       {
         std::cout << "reach end" << std::endl;
@@ -217,7 +222,14 @@ int KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vector3d start_v, 
           double dt = tau * double(k) / double(check_num_);
           stateTransit(cur_state, xt, um, dt);
           pos = xt.head(3);
-          if (edt_environment_->sdf_map_->getInflateOccupancy(pos) == 1 )
+          if (edt_environment_->sdf_map_->getInflateOccupancy(pos) != 0 )  // != 0: 地圖外(-1)也視為障礙
+          {
+            is_occ = true;
+            break;
+          }
+          // 高於起飛高度 0.6m 以上的未知空間視為障礙（防止穿越未掃描的牆壁上半部）
+          // 0.6m 容許 kinodynamic primitive 的自然垂直弧度，並讓 A* 能側向探索進入未知區域繞過長牆
+          if (pos(2) > start_pt_(2) + 0.6 && edt_environment_->sdf_map_->isUnknown(pos))
           {
             is_occ = true;
             break;
@@ -452,7 +464,12 @@ bool KinodynamicAstar::computeShotTraj(Eigen::VectorXd state1, Eigen::VectorXd s
     // if (edt_environment_->evaluateCoarseEDT(coord, -1.0) <= margin_) {
     //   return false;
     // }
-    if (edt_environment_->sdf_map_->getInflateOccupancy(coord) == 1)
+    if (edt_environment_->sdf_map_->getInflateOccupancy(coord) != 0)  // 地圖外也視為障礙
+    {
+      return false;
+    }
+    // 高於起飛高度 0.6m 以上的未知空間視為障礙（與主搜尋一致的閾值）
+    if (coord(2) > start_pt_(2) + 0.6 && edt_environment_->sdf_map_->isUnknown(coord))
     {
       return false;
     }
