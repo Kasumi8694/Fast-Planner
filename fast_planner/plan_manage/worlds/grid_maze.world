@@ -1,0 +1,195 @@
+<?xml version="1.0" ?>
+<!--
+  Test World 5: Grid Maze (網格形障礙物)
+  ========================================
+  Goal: Test whether ESDF correctly models a lattice of thin pillars,
+        and whether the planner can thread through without misjudging collisions.
+
+  Layout:
+    - 5×5 grid of thin box pillars: 0.3m × 0.3m × 2.5m
+    - Grid spans x=5–12.2, y=−3.6–3.6
+    - Center-to-center spacing: 1.8m
+    - Gap between pillars: 1.8 − 0.3 = 1.5m (clear)
+    - With ESDF inflation 0.2m: effective gap = 1.5 − 0.4 = 1.1m
+    - Drone + clearance needed: ~0.4 + 0.4 = 0.8m → gap 1.1m is passable ✓
+
+  Potential failure modes:
+    1. ESDF at 0.1m resolution may quantize thin pillars (0.3m = 3 voxels) → underestimates inflation
+    2. Overlapping distance fields from adjacent pillars may sum oddly → unexpected repulsion
+    3. Optimizer may oscillate between adjacent pillar repulsions → trajectory jitter
+
+  Grid positions (x × y):
+    x: 5.0, 6.8, 8.6, 10.4, 12.2  (spacing 1.8m)
+    y: −3.6, −1.8, 0.0, 1.8, 3.6   (spacing 1.8m)
+    → 25 pillars total
+
+  Recommended tests:
+    roslaunch plan_manage hector_fast_planner.launch world:=grid_maze
+    Test A: Goal (14, 0, 1.5)   ← straight through grid center column
+    Test B: Goal (14, 1.8, 1.5) ← through corridor offset by one row
+    Test C: Goal (14, 5, 1.5)   ← bypass grid entirely on the side
+-->
+<sdf version="1.6">
+  <world name="grid_maze">
+
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <gravity>0 0 -9.81</gravity>
+      <ode>
+        <solver><type>quick</type><iters>50</iters><sor>1.3</sor></solver>
+        <constraints>
+          <cfm>0.0</cfm><erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <scene>
+      <ambient>0.5 0.5 0.5 1.0</ambient>
+      <shadows>false</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- Row y=-3.6 -->
+    <model name="p00"><static>true</static><pose>5.0  -3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p10"><static>true</static><pose>6.8  -3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p20"><static>true</static><pose>8.6  -3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p30"><static>true</static><pose>10.4 -3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p40"><static>true</static><pose>12.2 -3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material></visual>
+    </link></model>
+
+    <!-- Row y=-1.8 -->
+    <model name="p01"><static>true</static><pose>5.0  -1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.4 0.2 1</ambient><diffuse>0.8 0.4 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p11"><static>true</static><pose>6.8  -1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.4 0.2 1</ambient><diffuse>0.8 0.4 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p21"><static>true</static><pose>8.6  -1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.4 0.2 1</ambient><diffuse>0.8 0.4 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p31"><static>true</static><pose>10.4 -1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.4 0.2 1</ambient><diffuse>0.8 0.4 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p41"><static>true</static><pose>12.2 -1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.4 0.2 1</ambient><diffuse>0.8 0.4 0.2 1</diffuse></material></visual>
+    </link></model>
+
+    <!-- Row y=0.0 (center row) -->
+    <model name="p02"><static>true</static><pose>5.0   0.0 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.2 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p12"><static>true</static><pose>6.8   0.0 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.2 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p22"><static>true</static><pose>8.6   0.0 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.2 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p32"><static>true</static><pose>10.4  0.0 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.2 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p42"><static>true</static><pose>12.2  0.0 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.2 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+
+    <!-- Row y=+1.8 -->
+    <model name="p03"><static>true</static><pose>5.0   1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.2 0.8 1</ambient><diffuse>0.8 0.2 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p13"><static>true</static><pose>6.8   1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.2 0.8 1</ambient><diffuse>0.8 0.2 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p23"><static>true</static><pose>8.6   1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.2 0.8 1</ambient><diffuse>0.8 0.2 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p33"><static>true</static><pose>10.4  1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.2 0.8 1</ambient><diffuse>0.8 0.2 0.8 1</diffuse></material></visual>
+    </link></model>
+    <model name="p43"><static>true</static><pose>12.2  1.8 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.2 0.8 1</ambient><diffuse>0.8 0.2 0.8 1</diffuse></material></visual>
+    </link></model>
+
+    <!-- Row y=+3.6 -->
+    <model name="p04"><static>true</static><pose>5.0   3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.8 0.2 1</ambient><diffuse>0.8 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p14"><static>true</static><pose>6.8   3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.8 0.2 1</ambient><diffuse>0.8 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p24"><static>true</static><pose>8.6   3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.8 0.2 1</ambient><diffuse>0.8 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p34"><static>true</static><pose>10.4  3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.8 0.2 1</ambient><diffuse>0.8 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+    <model name="p44"><static>true</static><pose>12.2  3.6 0 0 0 0</pose><link name="link">
+      <collision name="c"><geometry><box><size>0.3 0.3 2.5</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>0.3 0.3 2.5</size></box></geometry>
+        <material><ambient>0.8 0.8 0.2 1</ambient><diffuse>0.8 0.8 0.2 1</diffuse></material></visual>
+    </link></model>
+
+  </world>
+</sdf>

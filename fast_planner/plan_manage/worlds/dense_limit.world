@@ -1,0 +1,156 @@
+<?xml version="1.0" ?>
+<!--
+  Test World: Dense Obstacle Limit Test
+  ======================================
+  Progressive density test to find the gap threshold where the planner fails.
+  A corridor bounded by side walls with 3 phases of staggered cylinders.
+
+  Layout:
+    - Side walls at y=+-4.15 (inner face at +-4.0), x=[2,20], height=6.0m
+    - All cylinders: R=0.3m, height=6.0m (z=[-3,3]), exceed virtual_ceil=2.5
+    - Drone spawns at (0, 0, 1.0), goal at (22, 0, 1.5)
+
+  Phase A  (x=4, x=6)   Gap = 1.2m  (inflated 0.8m, ESDF center 0.6m)  Easy
+  Phase B  (x=10, x=12) Gap = 1.0m  (inflated 0.6m, ESDF center 0.5m)  Moderate
+  Phase C  (x=16, x=18) Gap = 0.8m  (inflated 0.4m, ESDF center 0.4m)  Borderline
+
+  Each phase has two staggered rows forcing an S-curve through the gaps.
+  Edge cylinders + side walls block any lateral bypass.
+
+  Theoretical limits (from code analysis):
+    - A* hard limit: gap > 2*inflation = 0.4m
+    - Optimizer soft limit: gap >= 2*dist0 = 0.8m
+    - Below 0.8m: optimizer struggles; below 0.6m: A* fails
+
+  Expected results:
+    - Phase A + B pass: planner works within soft limit
+    - Phase C pass: limit is <= 0.8m
+    - Phase C fail: limit is between 0.8 and 1.0m
+    - Phase A fail: parameter analysis is wrong (investigate!)
+
+  roslaunch plan_manage hector_fast_planner.launch world:=dense_limit
+  Set 2D Nav Goal to: (22, 0)
+-->
+<sdf version="1.6">
+  <world name="dense_limit">
+
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <gravity>0 0 -9.81</gravity>
+      <ode>
+        <solver><type>quick</type><iters>50</iters><sor>1.3</sor></solver>
+        <constraints>
+          <cfm>0.0</cfm><erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <scene>
+      <ambient>0.5 0.5 0.5 1.0</ambient>
+      <shadows>false</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- ====== Side walls (corridor boundaries) ====== -->
+    <model name="wall_left">
+      <static>true</static>
+      <pose>11 -4.15 3.0 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>18 0.3 6.0</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>18 0.3 6.0</size></box></geometry>
+          <material><ambient>0.4 0.4 0.5 1</ambient><diffuse>0.4 0.4 0.5 1</diffuse></material></visual>
+      </link>
+    </model>
+    <model name="wall_right">
+      <static>true</static>
+      <pose>11 4.15 3.0 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>18 0.3 6.0</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>18 0.3 6.0</size></box></geometry>
+          <material><ambient>0.4 0.4 0.5 1</ambient><diffuse>0.4 0.4 0.5 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <!-- =========================================================== -->
+    <!-- Phase A: Gap = 1.2m  (Easy)                                 -->
+    <!-- =========================================================== -->
+    <!-- Row x=4 aligned: y = {-3.6, -1.8, 0, 1.8, 3.6}              -->
+    <model name="a1_1"><static>true</static><pose>4 -3.6 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a1_2"><static>true</static><pose>4 -1.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a1_3"><static>true</static><pose>4 0 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a1_4"><static>true</static><pose>4 1.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a1_5"><static>true</static><pose>4 3.6 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+
+    <!-- Row x=6 offset: y = {-3.6, -2.7, -0.9, 0.9, 2.7, 3.6}        -->
+    <model name="a2_1"><static>true</static><pose>6 -3.6 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a2_2"><static>true</static><pose>6 -2.7 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a2_3"><static>true</static><pose>6 -0.9 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a2_4"><static>true</static><pose>6 0.9 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a2_5"><static>true</static><pose>6 2.7 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+    <model name="a2_6"><static>true</static><pose>6 3.6 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.2 0.6 0.3 1</ambient><diffuse>0.2 0.6 0.3 1</diffuse></material></visual></link></model>
+
+    <!-- =========================================================== -->
+    <!-- Phase B: Gap = 1.0m  (Moderate)                             -->
+    <!-- =========================================================== -->
+    <!-- Row x=10 aligned: y = {-3.9, -3.2, -1.6, 0, 1.6, 3.2, 3.9}  -->
+    <model name="b1_1"><static>true</static><pose>10 -3.9 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b1_2"><static>true</static><pose>10 -3.2 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b1_3"><static>true</static><pose>10 -1.6 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b1_4"><static>true</static><pose>10 0 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b1_5"><static>true</static><pose>10 1.6 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b1_6"><static>true</static><pose>10 3.2 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b1_7"><static>true</static><pose>10 3.9 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+
+    <!-- Row x=12 offset: y = {-3.3, -2.4, -0.8, 0.8, 2.4, 3.3}       -->
+    <model name="b2_1"><static>true</static><pose>12 -3.3 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b2_2"><static>true</static><pose>12 -2.4 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b2_3"><static>true</static><pose>12 -0.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b2_4"><static>true</static><pose>12 0.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b2_5"><static>true</static><pose>12 2.4 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+    <model name="b2_6"><static>true</static><pose>12 3.3 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.6 0.2 1</ambient><diffuse>0.8 0.6 0.2 1</diffuse></material></visual></link></model>
+
+    <!-- =========================================================== -->
+    <!-- Phase C: Gap = 0.8m  (Borderline - theoretical limit)       -->
+    <!-- =========================================================== -->
+    <!-- Row x=16 aligned: y = {-3.5, -2.8, -1.4, 0, 1.4, 2.8, 3.5}  -->
+    <model name="c1_1"><static>true</static><pose>16 -3.5 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c1_2"><static>true</static><pose>16 -2.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c1_3"><static>true</static><pose>16 -1.4 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c1_4"><static>true</static><pose>16 0 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c1_5"><static>true</static><pose>16 1.4 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c1_6"><static>true</static><pose>16 2.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c1_7"><static>true</static><pose>16 3.5 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+
+    <!-- Row x=18 offset: y = {-3.5, -2.8, -2.1, -0.7, 0.7, 2.1, 2.8, 3.5} -->
+    <model name="c2_1"><static>true</static><pose>18 -3.5 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_2"><static>true</static><pose>18 -2.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_3"><static>true</static><pose>18 -2.1 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_4"><static>true</static><pose>18 -0.7 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_5"><static>true</static><pose>18 0.7 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_6"><static>true</static><pose>18 2.1 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_7"><static>true</static><pose>18 2.8 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="c2_8"><static>true</static><pose>18 3.5 0 0 0 0</pose><link name="l"><collision name="c"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.3</radius><length>6.0</length></cylinder></geometry><material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.8 0.2 0.2 1</diffuse></material></visual></link></model>
+
+    <!-- Start marker (green) -->
+    <model name="marker_start"><static>true</static><pose>0 0 0 0 0 0</pose>
+      <link name="link">
+        <visual name="v"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.1 0.9 0.1 1</ambient><diffuse>0.1 0.9 0.1 1</diffuse></material></visual>
+      </link></model>
+
+    <!-- Goal marker (red) -->
+    <model name="marker_goal"><static>true</static><pose>22 0 0 0 0 0</pose>
+      <link name="link">
+        <visual name="v"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.9 0.1 0.1 1</ambient><diffuse>0.9 0.1 0.1 1</diffuse></material></visual>
+      </link></model>
+
+  </world>
+</sdf>

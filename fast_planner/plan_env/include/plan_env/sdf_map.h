@@ -103,7 +103,7 @@ struct MappingParameters {
   int local_map_margin_;
 
   /* visualization and computation time display */
-  double esdf_slice_height_, visualization_truncate_height_, virtual_ceil_height_, ground_height_;
+  double esdf_slice_height_, visualization_truncate_height_, virtual_ceil_height_, virtual_floor_height_, ground_height_;
   bool show_esdf_time_, show_occ_time_;
 
   /* active mapping */

@@ -1,0 +1,92 @@
+<?xml version="1.0" ?>
+<!--
+  Test World 2: Long Wall (超長牆壁)
+  ====================================
+  Goal: Test whether the planner flies OVER the wall rather than going around.
+
+  Layout:
+    - Wall at x=8, spanning y=-18 to y=18 (36m wide), height 2.5m
+    - Map is 40×40m, so the wall ends are at y=±18 (only 2m from boundary)
+    - Going AROUND: ~18m sideways detour → impractical
+    - Going OVER: climb to z > 2.7m (drone at z=1.0 → +1.7m gain)
+
+  Requires tuned sensor config (kino_algorithm_hector.xml):
+    - depth_filter_maxdist=5.0m → wall detected at x=3.0 (5m ahead), giving 5s reaction time
+    - At max_acc=1.0: Δz_max in 5s ≈ 0.5 + 1.0×4.0 = 4.5m → easily clears 2.7m target ✓
+    - (With old 2.9m range: only 2.9s → Δz ≈ 2.9m, but A* node budget was the bottleneck)
+
+  Expected behavior:
+    - Drone sees wall from ~5m away, plans climb to z ≈ 3.0m, crosses, descends back to 1.5m
+    - "Going over" trajectory should look like a smooth arc over the wall
+
+  Recommended test:
+    roslaunch plan_manage hector_fast_planner.launch world:=long_wall
+    Set 2D Nav Goal to: (15, 0, 1.5)   ← directly behind the wall, forces climbing
+-->
+<sdf version="1.6">
+  <world name="long_wall">
+
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <gravity>0 0 -9.81</gravity>
+      <ode>
+        <solver><type>quick</type><iters>50</iters><sor>1.3</sor></solver>
+        <constraints>
+          <cfm>0.0</cfm><erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <scene>
+      <ambient>0.5 0.5 0.5 1.0</ambient>
+      <shadows>false</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- The long wall: 36m wide, 2.0m tall, 0.3m thick -->
+    <!-- pose: center at (8, 0, 1.0) → spans z=0 to z=2.0, y=-18 to y=18 -->
+    <model name="the_long_wall">
+      <static>true</static>
+      <pose>8 0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>0.3 36 2.0</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.3 36 2.0</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1.0</ambient>
+            <diffuse>0.6 0.6 0.6 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Marker cylinders on both sides to help orient in RViz -->
+    <model name="marker_start"><static>true</static><pose>2 0 0 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry></collision>
+        <visual name="v"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.1 0.9 0.1 1</ambient><diffuse>0.1 0.9 0.1 1</diffuse></material></visual>
+      </link></model>
+
+    <model name="marker_goal"><static>true</static><pose>15 0 0 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry></collision>
+        <visual name="v"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.9 0.1 0.1 1</ambient><diffuse>0.9 0.1 0.1 1</diffuse></material></visual>
+      </link></model>
+
+  </world>
+</sdf>

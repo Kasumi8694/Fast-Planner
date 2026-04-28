@@ -104,17 +104,31 @@ bool FastPlannerManager::checkTrajCollision(double& distance) {
   Eigen::Vector3d fut_pt;
   double          fut_t = 0.02;
 
+  double min_dist = 1e9;
+  Eigen::Vector3d min_dist_pt;
   while (radius < 6.0 && t_now + fut_t < local_data_.duration_) {
     fut_pt = local_data_.position_traj_.evaluateDeBoor(tm + t_now + fut_t);
 
     double dist = edt_environment_->evaluateCoarseEDT(fut_pt, -1.0);
-    if (dist < 0.1) {
+    if (dist < min_dist) {
+      min_dist = dist;
+      min_dist_pt = fut_pt;
+    }
+    if (dist < 0.18) {  // 降低觸發閾值：0.18~0.3m 屬於擦邊但可執行，避免振盪重規劃
+      ROS_WARN("[DEBUG] Traj collision at (%.2f,%.2f,%.2f) dist=%.3f, radius=%.2f",
+               fut_pt(0), fut_pt(1), fut_pt(2), dist, radius);
       distance = radius;
       return false;
     }
 
     radius = (fut_pt - cur_pt).norm();
     fut_t += 0.02;
+  }
+
+  // 每次檢查顯示最小距離（只在距離較小時print避免刷屏）
+  if (min_dist < 2.0) {
+    ROS_INFO_THROTTLE(1.0, "[DEBUG] Traj min ESDF dist=%.2f at (%.1f,%.1f,%.1f)",
+                      min_dist, min_dist_pt(0), min_dist_pt(1), min_dist_pt(2));
   }
 
   return true;
@@ -175,6 +189,20 @@ bool FastPlannerManager::kinodynamicReplan(Eigen::Vector3d start_pt, Eigen::Vect
 
   plan_data_.kino_path_ = kino_path_finder_->getKinoTraj(0.01);
 
+  // DEBUG: 顯示 A* 路徑統計
+  {
+    double max_z = -1e9, min_z = 1e9;
+    for (auto& pt : plan_data_.kino_path_) {
+      if (pt(2) > max_z) max_z = pt(2);
+      if (pt(2) < min_z) min_z = pt(2);
+    }
+    auto& path = plan_data_.kino_path_;
+    ROS_INFO("[DEBUG] A* path: %zu pts, z range [%.2f, %.2f], start(%.1f,%.1f,%.1f) -> end(%.1f,%.1f,%.1f)",
+             path.size(), min_z, max_z,
+             path.front()(0), path.front()(1), path.front()(2),
+             path.back()(0), path.back()(1), path.back()(2));
+  }
+
   t_search = (ros::Time::now() - t1).toSec();
 
   // parameterize the path to bspline
@@ -197,7 +225,27 @@ bool FastPlannerManager::kinodynamicReplan(Eigen::Vector3d start_pt, Eigen::Vect
     cost_function |= BsplineOptimizer::ENDPOINT;
   }
 
+  // DEBUG: 優化前控制點範圍
+  {
+    double min_y = 1e9, max_y = -1e9;
+    for (int i = 0; i < ctrl_pts.rows(); ++i) {
+      if (ctrl_pts(i,1) < min_y) min_y = ctrl_pts(i,1);
+      if (ctrl_pts(i,1) > max_y) max_y = ctrl_pts(i,1);
+    }
+    ROS_INFO("[DEBUG] Before opt: %ld ctrl pts, y range [%.2f, %.2f]", ctrl_pts.rows(), min_y, max_y);
+  }
+
   ctrl_pts = bspline_optimizers_[0]->BsplineOptimizeTraj(ctrl_pts, ts, cost_function, 1, 1);
+
+  // DEBUG: 優化後控制點範圍
+  {
+    double min_y = 1e9, max_y = -1e9;
+    for (int i = 0; i < ctrl_pts.rows(); ++i) {
+      if (ctrl_pts(i,1) < min_y) min_y = ctrl_pts(i,1);
+      if (ctrl_pts(i,1) > max_y) max_y = ctrl_pts(i,1);
+    }
+    ROS_INFO("[DEBUG] After opt: %ld ctrl pts, y range [%.2f, %.2f]", ctrl_pts.rows(), min_y, max_y);
+  }
 
   t_opt = (ros::Time::now() - t1).toSec();
 

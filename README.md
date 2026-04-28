@@ -2,23 +2,6 @@
 
 **Fast-Planner** is developed aiming to enable quadrotor fast flight in complex unknown environments. It contains a rich set of carefully designed planning algorithms.
 
----
-
-## Quick Start
-
-```bash
-# Setup environment
-source /opt/ros/noetic/setup.bash
-source ~/Fast-Planner/hector_ws/devel/setup.bash --extend
-source ~/Fast-Planner/devel/setup.bash --extend
-
-# Launch
-roslaunch plan_manage hector_fast_planner.launch
-```
-
-**After launching:**
-- Use "2D Nav Goal" in RViz to set target positions
-- Watch autonomous obstacle avoidance in action!
 
 ---
 
@@ -37,11 +20,9 @@ roslaunch plan_manage hector_fast_planner.launch
 
 | Document | Description |
 |----------|-------------|
-| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Code organization |
 | [PROJECT_STRUCTURE_zh_TW.md](PROJECT_STRUCTURE_zh_TW.md) | 專案結構（繁體中文） |
 | [INSTALL_zh_TW.md](INSTALL_zh_TW.md) | 安裝指南（繁體中文） |
 | [PROJECT_REPORT.md](PROJECT_REPORT.md) | 專案報告（繁體中文） |
-| [CLAUDE.md](CLAUDE.md) | Development guide |
 
 ---
 
@@ -49,31 +30,7 @@ roslaunch plan_manage hector_fast_planner.launch
 
 Tested on Ubuntu 18.04 (ROS Melodic) and 20.04 (ROS Noetic).
 
-### 1. Install Dependencies
-
-```bash
-# NLopt v2.7.1
-git clone -b v2.7.1 https://github.com/stevengj/nlopt.git
-cd nlopt && mkdir build && cd build
-cmake .. && make && sudo make install
-
-# Armadillo
-sudo apt-get install libarmadillo-dev
-```
-
-### 2. Build Fast-Planner
-
-```bash
-cd ~/Fast-Planner
-catkin_make
-```
-
-### 3. Build Hector Workspace (for Gazebo simulation)
-
-```bash
-cd ~/Fast-Planner/hector_ws
-catkin_make
-```
+See [INSTALL_zh_TW.md](INSTALL_zh_TW.md) for detail
 
 ---
 

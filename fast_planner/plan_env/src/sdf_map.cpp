@@ -66,6 +66,7 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
   node_.param("sdf_map/esdf_slice_height", mp_.esdf_slice_height_, -0.1);
   node_.param("sdf_map/visualization_truncate_height", mp_.visualization_truncate_height_, -0.1);
   node_.param("sdf_map/virtual_ceil_height", mp_.virtual_ceil_height_, -0.1);
+  node_.param("sdf_map/virtual_floor_height", mp_.virtual_floor_height_, -0.1);
 
   node_.param("sdf_map/show_occ_time", mp_.show_occ_time_, false);
   node_.param("sdf_map/show_esdf_time", mp_.show_esdf_time_, false);
@@ -772,13 +773,30 @@ void SDFMap::clearAndInflateLocalMap() {
         }
       }
 
-  // add virtual ceiling to limit flight height
+  // add virtual ceiling to limit flight height — fill from ceil_height to map top
   if (mp_.virtual_ceil_height_ > -0.5) {
     int ceil_id = floor((mp_.virtual_ceil_height_ - mp_.map_origin_(2)) * mp_.resolution_inv_);
+    int z_max = mp_.map_voxel_num_(2) - 1;
+    if (ceil_id < 0) ceil_id = 0;
+    if (ceil_id > z_max) ceil_id = z_max;  // clamp: 防止越界導致天花板失效
     for (int x = md_.local_bound_min_(0); x <= md_.local_bound_max_(0); ++x)
-      for (int y = md_.local_bound_min_(1); y <= md_.local_bound_max_(1); ++y) {
-        md_.occupancy_buffer_inflate_[toAddress(x, y, ceil_id)] = 1;
-      }
+      for (int y = md_.local_bound_min_(1); y <= md_.local_bound_max_(1); ++y)
+        for (int z = ceil_id; z <= z_max; ++z) {
+          md_.occupancy_buffer_inflate_[toAddress(x, y, z)] = 1;
+        }
+  }
+
+  // add virtual floor to prevent trajectory going below flight level — fill from 0 to floor_height
+  if (mp_.virtual_floor_height_ > -0.5) {
+    int floor_id = floor((mp_.virtual_floor_height_ - mp_.map_origin_(2)) * mp_.resolution_inv_);
+    int z_min = 0;
+    if (floor_id > mp_.map_voxel_num_(2) - 1) floor_id = mp_.map_voxel_num_(2) - 1;
+    if (floor_id < 0) floor_id = 0;
+    for (int x = md_.local_bound_min_(0); x <= md_.local_bound_max_(0); ++x)
+      for (int y = md_.local_bound_min_(1); y <= md_.local_bound_max_(1); ++y)
+        for (int z = z_min; z <= floor_id; ++z) {
+          md_.occupancy_buffer_inflate_[toAddress(x, y, z)] = 1;
+        }
   }
 }
 

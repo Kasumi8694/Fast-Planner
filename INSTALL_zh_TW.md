@@ -236,82 +236,8 @@ roslaunch plan_manage hector_fast_planner.launch
 
 ---
 
-## 常見問題
 
-### 問題 1：NLopt 找不到
-
-**錯誤訊息：**
-```
-Could not find NLopt
-```
-
-**解決方案：**
-```bash
-# 確認 NLopt 已安裝
-ls /usr/local/lib/libnlopt*
-
-# 如未找到，重新安裝 NLopt v2.7.1
-cd ~/nlopt/build
-sudo make install
-
-# 更新動態連結庫
-sudo ldconfig
-```
-
-### 問題 2：Eigen 版本不相容
-
-**錯誤訊息：**
-```
-static assertion failed: YOU_MIXED_DIFFERENT_NUMERIC_TYPES
-```
-
-**解決方案：**
-```bash
-# 檢查 Eigen 版本
-pkg-config --modversion eigen3
-
-# 確保使用系統 Eigen
-sudo apt-get install --reinstall libeigen3-dev
-```
-
-### 問題 3：Gazebo 模型下載失敗
-
-**錯誤訊息：**
-```
-[Err] [ModelDatabase.cc] Unable to download model
-```
-
-**解決方案：**
-```bash
-# 手動下載模型
-cd ~/.gazebo
-git clone https://github.com/osrf/gazebo_models.git models
-```
-
-### 問題 4：catkin_make 失敗
-
-**解決方案：**
-```bash
-# 清除編譯快取
-cd ~/Fast-Planner
-rm -rf build devel
-catkin_make
-```
-
-### 問題 5：RViz 顯示空白
-
-**解決方案：**
-```bash
-# 檢查 Fixed Frame 設置
-# 在 RViz 中將 Fixed Frame 改為 "world"
-
-# 或重新設定 RViz 配置
-roslaunch plan_manage rviz.launch
-```
-
----
-
-## 目錄結構
+## Project structure
 
 安裝完成後的目錄結構：
 
@@ -331,11 +257,10 @@ roslaunch plan_manage rviz.launch
 
 ---
 
-## 下一步
+## Next step
 
 安裝完成後，請參閱：
 
-- [README.md](README.md) - 快速啟動指南
 - [PROJECT_STRUCTURE_zh_TW.md](PROJECT_STRUCTURE_zh_TW.md) - 專案結構說明
 - [PROJECT_REPORT.md](PROJECT_REPORT.md) - 專案報告
 

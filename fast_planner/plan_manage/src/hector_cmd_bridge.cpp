@@ -37,16 +37,20 @@ public:
     nh.param<double>("max_angular_vel", max_angular_vel_, 1.5);
     nh.param<double>("position_gain", kp_, 1.5);  // 位置誤差增益
     nh.param<double>("velocity_gain", kv_, 0.5);  // 速度前饋增益
+    nh.param<double>("min_flight_height", min_flight_height_, 0.3);  // 最低飛行高度
+    nh.param<double>("hover_height", hover_height_, 1.0);  // 待命懸停高度
 
     // Enable motors service
     enable_motors_client_ = nh_global.serviceClient<hector_uav_msgs::EnableMotors>("/enable_motors");
 
     has_odom_ = false;
+    has_cmd_ = false;
     motors_enabled_ = false;
     last_cmd_time_ = ros::Time(0);
 
     ROS_INFO("[HectorCmdBridge] Initialized with velocity control mode");
-    ROS_INFO("[HectorCmdBridge] Kp=%.2f, Kv=%.2f, max_vel=%.2f", kp_, kv_, max_linear_vel_);
+    ROS_INFO("[HectorCmdBridge] Kp=%.2f, Kv=%.2f, max_vel=%.2f, min_z=%.2f",
+             kp_, kv_, max_linear_vel_, min_flight_height_);
   }
 
   void enableMotors() {
@@ -63,7 +67,16 @@ public:
   }
 
   void checkTimeout() {
-    // 如果超過 0.5 秒沒有命令，發送零速度（懸停）
+    // 啟動階段：尚未收到任何軌跡指令 → 主動爬升到 hover_height 待命
+    if (!has_cmd_ && has_odom_) {
+      enableMotors();
+      double ez = hover_height_ - current_odom_.pose.pose.position.z;
+      geometry_msgs::Twist hover_cmd;
+      hover_cmd.linear.z = std::max(-0.5, std::min(1.0, kp_ * ez));
+      vel_cmd_pub_.publish(hover_cmd);
+      return;
+    }
+    // 正常運作中但超過 0.5s 沒收到軌跡指令 → 零速懸停
     if (has_odom_ && (ros::Time::now() - last_cmd_time_).toSec() > 0.5) {
       geometry_msgs::Twist zero_cmd;
       vel_cmd_pub_.publish(zero_cmd);
@@ -74,6 +87,9 @@ private:
   void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     current_odom_ = *msg;
     has_odom_ = true;
+
+    // 一有 odom 就嘗試啟動馬達，確保 drone 在空中時不會因無推力而墜落
+    enableMotors();
 
     // 提取當前 yaw
     tf2::Quaternion q(
@@ -104,17 +120,32 @@ private:
     }
 
     enableMotors();
+    has_cmd_ = true;
     last_cmd_time_ = ros::Time::now();
+
+    // 強制最低飛行高度：防止軌跡穿地（ESDF 未掃描到的地面 voxel 被當成 free）
+    double target_z = std::max(cmd->position.z, min_flight_height_);
 
     // 計算位置誤差（世界座標系）
     double ex = cmd->position.x - current_odom_.pose.pose.position.x;
     double ey = cmd->position.y - current_odom_.pose.pose.position.y;
-    double ez = cmd->position.z - current_odom_.pose.pose.position.z;
+    double ez = target_z - current_odom_.pose.pose.position.z;
+    double pos_error = std::sqrt(ex*ex + ey*ey + ez*ez);
+
+    // 誤差過大時，優先追趕位置（減弱前饋，加強位置修正）
+    double kp_eff = kp_;
+    double kv_eff = kv_;
+    if (pos_error > 1.0) {
+      // 大誤差：純位置追趕，忽略前饋（前饋方向可能已不正確）
+      kp_eff = kp_ * 1.5;
+      kv_eff = 0.0;
+      ROS_WARN_THROTTLE(1.0, "[HectorCmdBridge] Large tracking error: %.2f m, catch-up mode", pos_error);
+    }
 
     // 計算期望速度（世界座標系）= 位置誤差 * Kp + 前饋速度 * Kv
-    double vx_world = kp_ * ex + kv_ * cmd->velocity.x;
-    double vy_world = kp_ * ey + kv_ * cmd->velocity.y;
-    double vz_world = kp_ * ez + kv_ * cmd->velocity.z;
+    double vx_world = kp_eff * ex + kv_eff * cmd->velocity.x;
+    double vy_world = kp_eff * ey + kv_eff * cmd->velocity.y;
+    double vz_world = kp_eff * ez + kv_eff * cmd->velocity.z;
 
     // 速度限幅（世界座標系）
     double v_mag = std::sqrt(vx_world*vx_world + vy_world*vy_world + vz_world*vz_world);
@@ -160,6 +191,7 @@ private:
   nav_msgs::Odometry current_odom_;
   double current_yaw_;
   bool has_odom_;
+  bool has_cmd_;
   bool motors_enabled_;
   ros::Time last_cmd_time_;
 
@@ -167,6 +199,8 @@ private:
   double max_angular_vel_;
   double kp_;  // 位置增益
   double kv_;  // 速度前饋增益
+  double min_flight_height_;  // 最低飛行高度
+  double hover_height_;       // 啟動懸停高度
 };
 
 int main(int argc, char** argv) {

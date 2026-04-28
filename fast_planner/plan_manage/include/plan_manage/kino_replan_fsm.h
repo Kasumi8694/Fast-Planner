@@ -89,6 +89,8 @@ private:
   /* planning data */
   bool trigger_, have_target_, have_odom_;
   FSM_EXEC_STATE exec_state_;
+  int replan_fail_count_;
+  static const int MAX_REPLAN_ATTEMPTS = 30;
 
   Eigen::Vector3d odom_pos_, odom_vel_;  // odometry state
   Eigen::Quaterniond odom_orient_;

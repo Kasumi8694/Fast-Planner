@@ -33,6 +33,7 @@ void KinoReplanFSM::init(ros::NodeHandle& nh) {
   exec_state_  = FSM_EXEC_STATE::INIT;
   have_target_ = false;
   have_odom_   = false;
+  replan_fail_count_ = 0;
 
   /*  fsm param  */
   nh.param("fsm/flight_type", target_type_, -1);
@@ -83,6 +84,7 @@ void KinoReplanFSM::waypointCallback(const nav_msgs::PathConstPtr& msg) {
   visualization_->drawGoal(end_pt_, 0.3, Eigen::Vector4d(1, 0, 0, 1.0));
   end_vel_.setZero();
   have_target_ = true;
+  replan_fail_count_ = 0;  // 新目標重置失敗計數
 
   if (exec_state_ == WAIT_TARGET)
     changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
@@ -163,10 +165,18 @@ void KinoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
       bool success = callKinodynamicReplan();
       if (success) {
         changeFSMExecState(EXEC_TRAJ, "FSM");
+        replan_fail_count_ = 0;
       } else {
-        // have_target_ = false;
-        // changeFSMExecState(WAIT_TARGET, "FSM");
-        changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+        replan_fail_count_++;
+        if (replan_fail_count_ >= MAX_REPLAN_ATTEMPTS) {
+          ROS_WARN("[FSM] Path planning failed %d times, giving up on this target.", replan_fail_count_);
+          have_target_ = false;
+          replan_fail_count_ = 0;
+          changeFSMExecState(WAIT_TARGET, "FSM");
+        } else {
+          ROS_WARN("[FSM] Replan attempt %d/%d failed, retrying...", replan_fail_count_, MAX_REPLAN_ATTEMPTS);
+          changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+        }
       }
       break;
     }
@@ -219,8 +229,17 @@ void KinoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
       bool success = callKinodynamicReplan();
       if (success) {
         changeFSMExecState(EXEC_TRAJ, "FSM");
+        replan_fail_count_ = 0;
       } else {
-        changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+        replan_fail_count_++;
+        if (replan_fail_count_ >= MAX_REPLAN_ATTEMPTS) {
+          ROS_WARN("[FSM] Replan failed %d times, abandoning target.", replan_fail_count_);
+          have_target_ = false;
+          replan_fail_count_ = 0;
+          changeFSMExecState(WAIT_TARGET, "FSM");
+        } else {
+          changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+        }
       }
       break;
     }
