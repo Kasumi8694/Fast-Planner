@@ -15,12 +15,12 @@
   <arg name="max_vel" default="0.8"/>
   <arg name="max_acc" default="0.8"/>
 
-  <!-- Hector Kinect camera intrinsics (from URDF: 60 degree FOV, 640x480) -->
-  <!-- fx = fy = width / (2 * tan(fov/2)) = 640 / (2 * tan(30)) = 554.26 -->
+  <!-- Hector Kinect camera intrinsics (from URDF: 90 degree FOV, 640x480, far=8m) -->
+  <!-- fx = fy = width / (2 * tan(fov/2)) = 640 / (2 * tan(45)) = 320.0 -->
   <arg name="cx" default="320.0"/>
   <arg name="cy" default="240.0"/>
-  <arg name="fx" default="554.26"/>
-  <arg name="fy" default="554.26"/>
+  <arg name="fx" default="320.0"/>
+  <arg name="fy" default="320.0"/>
 
   <!-- Flight mode: 1=2D Nav Goal, 2=Waypoints -->
   <arg name="flight_type" default="1"/>
